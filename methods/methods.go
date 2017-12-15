@@ -1,34 +1,36 @@
 package methods
 
 import(
-   "fmt"
-   "io/ioutil"
-   "net/http"
-   "regexp"
-   "strings"
-   "os"
-   "image/png"
-   "image/jpeg"
-   "image"
-   "time"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "regexp"
+    "strings"
+    "os"
+    "image/png"
+    "image/jpeg"
+    "image"
+    "time"
+
 )
+
 
 var filePath = "images/"
 var Dir_name = "images"
 
 func Make_dir(dir_name string){
-   err := os.Mkdir(dir_name, 0777)
-   if err != nil {
-      fmt.Println("mkdir root failed!")
-      return
-   }
+    err := os.Mkdir(dir_name, 0777)
+    if err != nil {
+        fmt.Println("mkdir root failed!")
+        return
+    }
 }
 
 func file_exist(fileName string) bool {
-   if _,ok:=os.Stat(fileName);ok == nil{
-      return true
-   }
-   return false
+    if _,ok:=os.Stat(fileName);ok == nil{
+        return true
+    }
+    return false
 }
 
 func Substr(str string, start, length int) string {
@@ -62,88 +64,88 @@ func Substr(str string, start, length int) string {
 }
 
 func Get_image_list(url string){
-   fmt.Println("get page link url==>", url)
-   body:=get_url(url)
-   if body == ""{
-      return
-   }
-   reg := regexp.MustCompile("http://www.meizitu.com/a/[0-9]+.html")
-   links:=reg.FindAllString(body, -1)
-   // fmt.Println(links)
-   get_image_link(links)
+    fmt.Println("get page link url==>", url)
+    body:=get_url(url)
+    if body == ""{
+        return
+        }
+    reg := regexp.MustCompile("http://www.meizitu.com/a/[0-9]+.html")
+    links:=reg.FindAllString(body, -1)
+    // fmt.Println(links)
+    get_image_link(links)
 }
 
 func get_image_link(links []string){
-   for _, uri := range links{
-      fmt.Println("Get images url, page link==>", uri)
-         body:=get_url(uri)
-         if ""==body{
-            return
-         }
-         // fmt.Println(body)
-         reg:=regexp.MustCompile("http://mm.chinasareview.com/wp-content/uploads/[^\\.]+\\.(jpg|png|gif)")
-         images:=reg.FindAllString(body, -1)
-         // fmt.Println(images)
-         download_image(images)
-   }
+    for _, uri := range links{
+        fmt.Println("Get images url, page link==>", uri)
+            body:=get_url(uri)
+            if ""==body{
+                return
+            }
+        // fmt.Println(body)
+        reg:=regexp.MustCompile("http://mm.chinasareview.com/wp-content/uploads/[^\\.]+\\.(jpg|png|gif)")
+        images:=reg.FindAllString(body, -1)
+        // fmt.Println(images)
+        download_image(images)
+    }
 }
 
 func download_image(images []string){
-   for _,v:=range images{
-      fmt.Println("Download image, url==>", v)
-      imageType:=Substr(v, -2, 3)
-      resp,ok:=http.Get(v)
-      if nil!=ok{
-         fmt.Println("Download image, url==>", v,"error")
-         time.Sleep(time.Duration(600)*time.Second)
-         continue
-      }
-      defer resp.Body.Close()
-      flag:=false
-      var iImage image.Image
-      content,ok:=ioutil.ReadAll(resp.Body)
-      body:=string(content)
-      if imageType=="jpg"{
-         iImage,ok=jpeg.Decode(strings.NewReader(body))
-         flag=true
-         if nil!=ok{
+    for _,v:=range images{
+        fmt.Println("Download image, url==>", v)
+        imageType:=Substr(v, -2, 3)
+        resp,ok:=http.Get(v)
+        if nil!=ok{
+            fmt.Println("Download image, url==>", v,"error")
+            time.Sleep(time.Duration(600)*time.Second)
             continue
-         }
-      } else if imageType == "png"{
-         iImage,ok=png.Decode(strings.NewReader(body))
-         flag=true
-         if nil!=ok{
-            continue
-         }
-      }
-      if flag{
-         rect:=iImage.Bounds()
-         if rect.Max.X < 200 || rect.Max.Y < 200{
+        }
+        defer resp.Body.Close()
+        flag:=false
+        var iImage image.Image
+        content,ok:=ioutil.ReadAll(resp.Body)
+        body:=string(content)
+        if imageType=="jpg"{
+            iImage,ok=jpeg.Decode(strings.NewReader(body))
+            flag=true
+            if nil!=ok{
+               continue
+            }
+        } else if imageType == "png"{
+            iImage,ok=png.Decode(strings.NewReader(body))
+            flag=true
+            if nil!=ok{
+                continue
+            }
+        }
+        if flag{
+            rect:=iImage.Bounds()
+            if rect.Max.X < 200 || rect.Max.Y < 200{
             //只下载大图，小图跳过
-            fmt.Println("Skip download image, url ==>", v)
-            continue
-         }
-      }
+                fmt.Println("Skip download image, url ==>", v)
+                continue
+            }
+        }
       // body:=getUrl(v)
-      if nil!=ok || "" == body{
-         fmt.Println("content is null")
-         continue
-      }
-      paths:=strings.Split(v,"/")
-      len:=len(paths)
-      fileName:=filePath + paths[len-4]+  paths[len-3]+  paths[len-2] +  paths[len-1]
-      if file_exist(fileName){
-         continue
-      }
-      f,ok:=os.Create(fileName)
-      if ok!=nil{
-         fmt.Println("open file error")
-         return
-      }
-      defer f.Close()
-      f.WriteString(body)
-      fmt.Println("Download image, url==>", v ,"successful")
-   }
+        if nil!=ok || "" == body{
+            fmt.Println("content is null")
+            continue
+        }
+        paths:=strings.Split(v,"/")
+        len:=len(paths)
+        fileName:=filePath + paths[len-4]+  paths[len-3]+  paths[len-2] +  paths[len-1]
+        if file_exist(fileName){
+            continue
+        }
+        f,ok:=os.Create(fileName)
+        if ok!=nil{
+            fmt.Println("open file error")
+            return
+        }
+        defer f.Close()
+        f.WriteString(body)
+        fmt.Println("Download image, url==>", v ,"successful")
+    }
 }
 
 func get_url(url string) (content string){
